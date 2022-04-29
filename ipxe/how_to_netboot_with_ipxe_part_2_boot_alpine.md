@@ -1,213 +1,189 @@
-How to Netboot with iPXE Part 1
+myArgs:  [ 'https://medium.com/@peter.bolch/6191ed711348' ]
+[![Peter Bolch](https://miro.medium.com/fit/c/96/96/1*Xi7nKjivvA-TQ_3iWg4S4w.jpeg)
+
+](https://medium.com/@peter.bolch?source=post_page-----6191ed711348--------------------------------)[Peter Bolch](https://medium.com/@peter.bolch?source=post_page-----6191ed711348--------------------------------)Follow
+
+Apr 29
+
+·5 min read
+
+How to Netboot with iPXE Part 2
 ===============================
 
-The Basics
-----------
+Booting Alpine
+--------------
 
-![](https://miro.medium.com/max/1400/1*dmk-oUjHhMKpRUhEoFpVgw.png)
+![](https://miro.medium.com/max/1400/0*Im4HYlTDlK2AtpOM)Photo by [Kaidi Guo](https://unsplash.com/@kaidi_guo?utm_source=medium&utm_medium=referral) on [Unsplash](https://unsplash.com?utm_source=medium&utm_medium=referral)
 
-I recently wanted to try out PXE (Preboot Execution Environment). I came across iPXE, former known as gPXE. (For the whole story see: i[PXE Homepage](https://ipxe.org/start))
+In “[How to netboot with iPXE Part 1: Basics](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)” we’ve learned how to build an iPXE.iso and embed a boot script. Furthermore we loaded an iPXE boot script over HTTP. We used the python HTTP module and qemu to test it on our local machine.
 
-iPXE is an ”open source network boot firmware” with some nice features. Instead of booting over dhcp and deliver the OS over tftp([learn more](https://networkboot.org/)), one can use HTTP (even HTTPS but with outdated cipher suites) iCSE SAN, AoE SAN, etc. It ships with a command line, we can build for different architectures, we can build bootable usb sticks, iso images …..
+Now we want to use HTTP to provide an iPXE boot script that actually boots Alpine Linux. We will use qemu once again. We choose Alpine because it has some nice resources [describing how to netboot](https://wiki.alpinelinux.org/wiki/PXE_boot) it and a “[netboot server](https://boot.alpinelinux.org/)” with infos and a full featured iPXE boot script so you can start exploring on your own.
 
-What will I learn?
-------------------
+What will I learn
+-----------------
 
-*   Build your very own iPXE .iso image to boot from and play around with the command line
-*   Start the .iso image in qemu to play around
-*   Write a boot script and embed it to the iPXE iso image
-*   Load further boot instructions from a HTTP server
+*   Creating a boot script to boot Alpine linux
+*   Add a kernel option (somewhat Alpine specific)
 
-We focus on providing an iPXE boot script on a HTTP server load it with a iPXE and execute the commands. In this article I’m not booting an operating system , but you’ll get familiar with the iPXE scripting language, and loading a boot script over HTTP. In Part II (coming soon) I will show you how to boot Alpine with iPXE.
+Download Alpine Netboot
+-----------------------
 
-Getting started
----------------
+Alpine provides a netboot version on the [download page](https://alpinelinux.org/downloads/). There are builds for several architectures. We load the x86\_64 Version to our HDD.
 
-To build iPXE we need to install the following packages on our system (for the full list and alternatives see: [https://ipxe.org/download](https://ipxe.org/download)):
+Once downloaded we create a folder called _web_. Extract the alpine-netboot-X.Y.ZZ-x86\_64.tar.gz to this folder. Later on the folder will also hold the iPXE script which is provided over HTTP.
 
-```
-$ dnf install gcc binutils make perl liblzma mtools mkisofs syslinux
-```
+Now we have two “netbootable” versions of Alpine in our _web_ folder. The \*-lts and the \*-virt version of Alpine.  
+For this tutorial it is not important to know the differences between the lts and the virt version. If you want to know more about the versions visit: [Alpine Wiki Kernel Page](https://wiki.alpinelinux.org/wiki/Kernels).
 
-Clone the iPXE repo from [https://github.com/ipxe/ipxe](https://github.com/ipxe/ipxe)
+In your webfolder you should see the following files:
 
-```
-$ git clone [git@github.com](mailto:git@github.com):ipxe/ipxe.git 
-```
+![](https://miro.medium.com/max/368/1*pEIL0qTQzkSs7M8-Zrg98g.png)
 
-For our testing environment we will need:
+iPXE Boot Script for Alpine Linux
+---------------------------------
+
+First of all we want to provide a boot script over HTTP to boot Alpine Linux. To perform the boot we have to load a kernel and an initial ram file system (initramfs) or initial ramdisk (initrd). A minimal iPXE bootscript may look like this:
 
 ```
-$ dnf install qemu python3
+#!ipxe  
+kernel url/to/kernel/vmlinuz \[kernel arguments\] initrd=initrd.img  
+initrd url/to/initrd.img  
+boot
 ```
 
-Build your first iPXE iso image
--------------------------------
+On the A[lpine Netboot Wiki Page](https://wiki.alpinelinux.org/wiki/PXE_boot) we can see which kernel arguments are available and which are required.
 
-First of all, we have to decide for  which system architecture we want to build the image. We choose a x86\_64 machine.
+**Required kernel arguments:**
 
-Run the following two commands in the src/ folder to build your first iPXE iso image.
+1.  ip — Provide a static ip or simply use dhcp to get an ip address
+2.  alpine\_repo —A list of repositories for /etc/apk/repositories
+
+Using _ip=dhcp_, the official _alpine repo url_ and the _alpine files_ (namely the kernel and the initramfs of the lts version) from our web folder, we end up with the following iPXE boot script:
 
 ```
-$ make bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi  
+#!ipxe  
+kernel http://10.0.2.2/vmlinuz-lts ip=dhcp alpine\_repo=http://dl-cdn.alpinelinux.org/alpine/v3.15/main initrd=initramfs-lts  
+initrd http://10.0.2.2/initramfs-lts  
+boot
+```
+
+Or a little smoother with variables
+
+```
+#!ipxe  
+  
+set local\_address http://10.0.2.2:5001  
+set alpine\_repo http://dl-cdn.alpinelinux.org/alpine/v3.15/main  
+  
+kernel ${local\_address}/vmlinuz-lts ip=dhcp alpine\_repo=${alpine\_repo} initrd=initramfs-lts  
+initrd ${local\_address}/initramfs-lts  
+  
+boot
+```
+
+> Remember: We use qemu and the python http server on the host machine, therefore we use http://10.0.2.2:5001 to call the host machine on port 5001.
+
+Now we create the alpine\_boot.ipxe file in the _web_ folder next to the Alpine files and paste the script above into this file. As we’ve learned in “[How to netboot with iPXE Part 1: Basics](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)” we provide our iPXE script by navigating into the web folder and start the python HTTP server with:
+
+```
+$ sudo python -m http.server 5001
+```
+
+Loading the iPXE script over HTTP and actually boot Alpine
+----------------------------------------------------------
+
+> One may ask: Peter why not embed the boot script in the ipxe.iso file instead of loading it over HTTP?  
+> Answer: It is much easier to edit the boot script and load it over HTTP than building the iso image everytime you’ve edited the boot script.  
+> But shure, if you want to, just build your ipxe.iso with the embeded alpine\_boot.ipxe boot script.
+
+Create a boot.ipxe file with the following content:
+
+```
+#!ipxe  
+chain [http://10.0.2.2:5001/alpine\_boot.ipxe](http://10.0.2.2/boot.ipxe)
+```
+
+Now lets build our ipxe.iso as shown in “[How to netboot with iPXE Part 1: Basics](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)”:
+
+```
+$ cd ipxe/src  
+$ make bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi EMBED=boot.ipxe  
 $ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi
 ```
 
-After that you’ll find the ipxe.iso file directly in the src folder.
-
-_A word about embedded scripts:  
-We could’ve pass a boot script at build time.This script would be executed once iPXE is running. But iPXE also ships with a nice little cli to play around with the iPXE commands. Therefore we don’t need to embed a boot script in the first place._
-
-_A word about uefi and the build without parameters:  
-If you only do a “make” in the src folder, like described in the iPXE README on github, you only get an iPXE iso which boots on standard bios, not uefi. You can then find the ipxe.iso in the /bin folder. This will also work for qemu. As I said: to test with qemu we don’t need uefi, but to show how one can build for a specific platform I decided to give you the build parameters for uefi, too. For cross compiling etc. refer to the iPXE documentation._
-
-Test the image
---------------
-
-Start qemu with your iso image as a cdrom (or use gnome boxes)
+Time to boot Alpine on qemu over HTTP:
 
 ```
 $ qemu-system-x86\_64 -boot d -cdrom ipxe.iso -m 512
 ```
 
-We should see something like this:
+You should see something like this
 
-![](https://miro.medium.com/max/1400/1*1EeXYdQ0KRskqurqF81gEw.png)
+![](https://miro.medium.com/max/1400/1*YWO9dXsAWfwsQJJJm5xXLQ.png)
 
-As we can see, iPXE configures the network and does a dhcp call to get an ip (10.0.2.15/24 gw 10.0.2.2). By pressing Ctrl-B we get to the iPXE command line to try out some [iPXE commands](https://ipxe.org/cmd). For example, we can try to load the official iPXE test boot script by typing the command:
+But what’s this? ERROR????  
+Yes! As you can see the error says ‘modloop failed to start’. This is, because we don’t tell the kernel where to find the modloop file. The modloop file provides a full kernel module tree as SquashFS. With our boot\_alpine.ipse script we just loaded the minimal kernel from the initramfs to boot. You can play with it, but it will be somewhat limited.
+
+As we can see in the file list above, Alpine Netboot ships with a modloop file. Lets have a look at the A[lpine Docs](https://wiki.alpinelinux.org/wiki/PXE_boot) and we’ll find the modloop option.
+
+> modloop
+> 
+> If the specified file protocol is http/ftp or https (if wget is installed), the modloop file will be downloaded to the /lib directory and will be mounted afterwards e.g. modloop=http://192.168.1.1/pxe/alpine/grsec.modloop.squashfs in the append section of your [bootloader](https://wiki.alpinelinux.org/wiki/Bootloaders)
+
+So lets give it a try and add this to our alpine\_boot.ipxe
 
 ```
-\> chain http://boot.ipxe.org/demo/boot.php
+modloop=${local\_address}/modloop-lts
 ```
 
-If there is no network connection, we can simply type dhcp again and it should work.
-
-Configuration
--------------
-
-There are several options to customize our build. We’ll find the config files in /src/config/.  
-For example, we can enable the german keymap by defining KEYBOARD\_MAP de in the console.h config file, simply remove the hash.
-
-Take a look around, there are some helpful config options in general.h, console.h or branding.h
-
-How to embed a boot script into your iPXE iso
----------------------------------------------
-
-Let’s assume we want to experiment with iPXE but we won’t use the iPXE command line anymore. Therefore we can dynamically provide a boot script over HTTP. So we need two boot scripts, one to bake into the iPXE iso image and another one which is provided over HTTP.
-
-The first one simply asks for further boot instructions over HTTP. It’s kind of decoupling and makes things very flexible for prototyping and testing, because we can change the boot script, provided by the HTTP server, without the need of rebuilding the whole iso image.
-
-So here is the boot script **boot.ipxe** for the iso image:
+Change your boot\_alpine.ipxe script to match this:
 
 ```
 #!ipxe  
-echo Configure dhcp ....  
-dhcp  
-chain http://10.0.2.2/boot-http.ipxe
+  
+set local\_address http://10.0.2.2:5001  
+set alpine\_repo http://dl-cdn.alpinelinux.org/alpine/v3.15/main  
+  
+kernel ${local\_address}/vmlinuz-lts modloop=${base-url}/modloop-lts ip=dhcp alpine\_repo=${alpine\_repo} initrd=initramfs-lts  
+initrd ${local\_address}/initramfs-lts  
+  
+boot
 ```
 
-Hint: 10.0.2.2 is the ip address of the host machine in qemu.
+Another qemu boot will show us something like this:
 
-Now you can embed the script into your iPXE iso with the follwing commands.
+![](https://miro.medium.com/max/1400/1*iIj6U8nhVSvvTyWsphb6dg.png)
 
-```
-$ make bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi **EMBED=boot.ipxe**  
-$ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi
-```
-
-Now we need a bootscript which is served by a HTTP server. For testing purposes create the following boot script called **boot-http.ipxe**:
-
-```
-#!ipxe  
-echo hello world!  
-echo sleeping for 5 seconds ....  
-sleep 5
-```
-
-This is perfectly fine for testing. iPXE will boot nothing but it says “hello world!” and is waiting for 5 seconds.
-
-To provide the boot script over HTTP we navigate to the folder where your boot-http.ipxe is located (on the host machine). In this folder start a HTTP server, e.g. a python http server with the following command.
-
-```
-$ sudo python -m http.server 80
-```
-
-Now start qemu with the new ipxe.iso and we should see this:
-
-![A boot screen with iPXE is booting, calling a http endpoint for further boot instructions and executes them which shows “Hello World” and “Slleping for 5 seconds”](https://miro.medium.com/max/1400/1*yh7YkHkYKr-ma4uV2eGLzQ.png)
-
-As we can see, iPXE starts our boot script, gets the boot-http.ipxe over HTTP and executes the commands in the boot-http file.
-
-Advanced boot script
---------------------
-
-As we can see in the screenshot above, iPXE is going to halt after our boot-http script is executed. This is because we provide nothing bootable. After that iPXE gives back the control to the bios. In consequence the bios tries to boot from HDD. And for shure there is nothing to boot from and we get the message ‘No bootable device’.  
-Now we have to reboot or force shutdown to test another boot script.
-
-Lets make this more comfortable by using the following iPXE boot script.
-
-```
-#!ipxe  
-set uri [http://10.0.2.2/boot-http.ipxe](http://10.0.2.2/boot-http.ipxe)  
-dhcp  
-:loading  
-prompt Press any key to continue loading from ${uri}  
-echo loading from ${uri}  
-chain ${uri}  
-goto loading
-```
-
-**set uri**
-
-With the set command we can assign a value to a variable and use it later on.
-
-```
-\# syntax 'set \[varname\] \[value\]'  
-set uri [http://10.0.2.2/boot-http.ipxe](http://10.0.2.2/boot-http.ipxe)  
-...  
-\# usage of the variable with ${varname}  
-prompt Press any key to continue loading from ${uri}
-```
-
-**Label**
-
-```
-\# This is a label, syntax ':<label>'  
-:loading
-```
-
-**Prompt**
-
-Just wait for the user to press any key. We use this to give control to the user.
-
-```
-prompt Press any key to continue loading from ${uri}
-```
-
-**goto**
-
-```
-goto loading
-```
-
-If the boot script isn’t booting into an OS, we came back to the iPXE script and jump to the label ‘:loading’ to start all over again. You can adjust your boot-http.ipxe and try again.
+And: tadaaaa. No more errors. Alpine is up and running.
 
 Final thoughts
 --------------
 
-We’ve build our own bootable iPXE iso, introduced config files to configure the build, introduced embedded boot scripts and finally show how to load boot instructions from a HTTP server. We’ve tested all of this with qemu and a simple HTTP server on the host machine.
+We’ve leraned how to boot Alpine with an iPXE boot script. Therefore we provided the Alpine netboot files and the iPXE boot script to boot Alpine over an local HTTP server. We’ve learned how to add boot options to the kernel command by discovering the modloop option.  
+As one might imagine, there is a lot more to discover. Alpine gives you the possibility to add an [apk overlay (apkovl)](https://wiki.alpinelinux.org/wiki/Alpine_local_backup) to specify which software should be installed. You can even provide files with an apkovl file.  
+So we can not only boot a specific Alpine version, we are also able to boot a Alpine version with a defined set of software and files.
 
-Now we have a setup to play around with iPXE.
+Whats next?
+-----------
 
-“[In How to Netboot with iPXE Part 2: Booting Alpine](https://medium.com/@peter.bolch/6191ed711348)” we will learn how to boot Alpine Linux with iPXE.
+In “How to Netboot with iPXE Part 3: Creating a menu and failure handling” we will learn how to create a menu with iPXE to boot either the lts version or the virt version of Alpine. Furthermore we will explore some error handling.
+
+Future
+------
+
+I’ve decided to go on with this series. Some of the topics I want to discover and share with you are:
+
+*   How to verify kernel and initramfs (imgverify)
+*   How to use isset, iseq and some other iPXE commands
+*   How to provide software and os updates for edge devices with an iPXE setup.
+
+Disclaimer: The list above is just a rough idea. There is no guarantee that the articles are ever written. ;)
 
 Links and Resources
 -------------------
 
-1.  Official Website: [https://ipxe.org/start](https://ipxe.org/start)
-2.  FAQ: [https://ipxe.org/faq](https://ipxe.org/faq)
-3.  What is Networkbooting: [https://networkboot.org/](https://networkboot.org/)
-4.  Rom Burning [https://ipxe.org/howto/romburning](https://ipxe.org/howto/romburning)
-5.  Downlaod page of iPXE [https://ipxe.org/download](https://ipxe.org/download)
-6.  iPXE command reference [https://ipxe.org/cmd](https://ipxe.org/cmd)
-7.  PXE boot Alpine: [https://wiki.alpinelinux.org/wiki/PXE\_boot](https://wiki.alpinelinux.org/wiki/PXE_boot)
+1.  Alpine Netboot Info Page: [https://boot.alpinelinux.org/](https://boot.alpinelinux.org/)
+2.  Alpine Netboot Wiki Page: [https://wiki.alpinelinux.org/wiki/PXE\_boot](https://wiki.alpinelinux.org/wiki/PXE_boot)
+3.  Difference between virt and lts alpine kernels [https://wiki.alpinelinux.org/wiki/Kernels](https://wiki.alpinelinux.org/wiki/Kernels)
+4.  apkovl [https://wiki.alpinelinux.org/wiki/Alpine\_local\_backup](https://wiki.alpinelinux.org/wiki/Alpine_local_backup)
+5.  ipxe commands [https://ipxe.org/cmd](https://ipxe.org/cmd)
