@@ -1,11 +1,4 @@
-myArgs:  [ 'https://medium.com/@peter.bolch/6191ed711348' ]
-[![Peter Bolch](https://miro.medium.com/fit/c/96/96/1*Xi7nKjivvA-TQ_3iWg4S4w.jpeg)
-
-](https://medium.com/@peter.bolch?source=post_page-----6191ed711348--------------------------------)[Peter Bolch](https://medium.com/@peter.bolch?source=post_page-----6191ed711348--------------------------------)Follow
-
-Apr 29
-
-·5 min read
+[Read Article on medium.com](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6191ed711348) 
 
 How to Netboot with iPXE Part 2
 ===============================
