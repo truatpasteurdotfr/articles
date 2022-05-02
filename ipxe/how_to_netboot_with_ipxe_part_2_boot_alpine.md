@@ -93,7 +93,7 @@ Create a boot.ipxe file with the following content:
 
 ```
 #!ipxe  
-chain [http://10.0.2.2:5001/alpine_boot.ipxe](http://10.0.2.2/boot.ipxe)
+chain http://10.0.2.2:5001/alpine_boot.ipxe
 ```
 
 Now lets build our ipxe.iso as shown in “[How to netboot with iPXE Part 1: Basics](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)”:
