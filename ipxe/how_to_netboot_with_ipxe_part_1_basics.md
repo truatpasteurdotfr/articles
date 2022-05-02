@@ -46,13 +46,13 @@ $ dnf install qemu python3
 Build your first iPXE iso image
 -------------------------------
 
-First of all, we have to decide for  which system architecture we want to build the image. We choose a x86\_64 machine.
+First of all, we have to decide for  which system architecture we want to build the image. We choose a x86_64 machine.
 
 Run the following two commands in the src/ folder to build your first iPXE iso image.
 
 ```
-$ make bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi  
-$ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi
+$ make bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi  
+$ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi
 ```
 
 After that you’ll find the ipxe.iso file directly in the src folder.
@@ -69,7 +69,7 @@ Test the image
 Start qemu with your iso image as a cdrom (or use gnome boxes)
 
 ```
-$ qemu-system-x86\_64 -boot d -cdrom ipxe.iso -m 512
+$ qemu-system-x86_64 -boot d -cdrom ipxe.iso -m 512
 ```
 
 We should see something like this:
@@ -79,7 +79,7 @@ We should see something like this:
 As we can see, iPXE configures the network and does a dhcp call to get an ip (10.0.2.15/24 gw 10.0.2.2). By pressing Ctrl-B we get to the iPXE command line to try out some [iPXE commands](https://ipxe.org/cmd). For example, we can try to load the official iPXE test boot script by typing the command:
 
 ```
-\> chain http://boot.ipxe.org/demo/boot.php
+> chain http://boot.ipxe.org/demo/boot.php
 ```
 
 If there is no network connection, we can simply type dhcp again and it should work.
@@ -88,7 +88,7 @@ Configuration
 -------------
 
 There are several options to customize our build. We’ll find the config files in /src/config/.  
-For example, we can enable the german keymap by defining KEYBOARD\_MAP de in the console.h config file, simply remove the hash.
+For example, we can enable the german keymap by defining KEYBOARD_MAP de in the console.h config file, simply remove the hash.
 
 Take a look around, there are some helpful config options in general.h, console.h or branding.h
 
@@ -113,8 +113,8 @@ Hint: 10.0.2.2 is the ip address of the host machine in qemu.
 Now you can embed the script into your iPXE iso with the follwing commands.
 
 ```
-$ make bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi **EMBED=boot.ipxe**  
-$ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86\_64-efi/ipxe.efi
+$ make bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi **EMBED=boot.ipxe**  
+$ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi
 ```
 
 Now we need a bootscript which is served by a HTTP server. For testing purposes create the following boot script called **boot-http.ipxe**:
@@ -164,17 +164,17 @@ goto loading
 With the set command we can assign a value to a variable and use it later on.
 
 ```
-\# syntax 'set \[varname\] \[value\]'  
+# syntax 'set [varname] [value]'  
 set uri [http://10.0.2.2/boot-http.ipxe](http://10.0.2.2/boot-http.ipxe)  
 ...  
-\# usage of the variable with ${varname}  
+# usage of the variable with ${varname}  
 prompt Press any key to continue loading from ${uri}
 ```
 
 **Label**
 
 ```
-\# This is a label, syntax ':<label>'  
+# This is a label, syntax ':<label>'  
 :loading
 ```
 
@@ -212,4 +212,4 @@ Links and Resources
 4.  Rom Burning [https://ipxe.org/howto/romburning](https://ipxe.org/howto/romburning)
 5.  Downlaod page of iPXE [https://ipxe.org/download](https://ipxe.org/download)
 6.  iPXE command reference [https://ipxe.org/cmd](https://ipxe.org/cmd)
-7.  PXE boot Alpine: [https://wiki.alpinelinux.org/wiki/PXE\_boot](https://wiki.alpinelinux.org/wiki/PXE_boot)
+7.  PXE boot Alpine: [https://wiki.alpinelinux.org/wiki/PXE_boot](https://wiki.alpinelinux.org/wiki/PXE_boot)
