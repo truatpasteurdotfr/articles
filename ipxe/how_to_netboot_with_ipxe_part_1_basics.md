@@ -113,7 +113,7 @@ Hint: 10.0.2.2 is the ip address of the host machine in qemu.
 Now you can embed the script into your iPXE iso with the follwing commands.
 
 ```
-$ make bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi **EMBED=boot.ipxe**  
+$ make bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi EMBED=boot.ipxe
 $ ./util/genfsimg -o ipxe.iso bin/ipxe.lkrn bin-x86_64-efi/ipxe.efi
 ```
 
@@ -150,7 +150,7 @@ Lets make this more comfortable by using the following iPXE boot script.
 
 ```
 #!ipxe  
-set uri [http://10.0.2.2/boot-http.ipxe](http://10.0.2.2/boot-http.ipxe)  
+set uri http://10.0.2.2/boot-http.ipxe
 dhcp  
 :loading  
 prompt Press any key to continue loading from ${uri}  
@@ -165,7 +165,7 @@ With the set command we can assign a value to a variable and use it later on.
 
 ```
 # syntax 'set [varname] [value]'  
-set uri [http://10.0.2.2/boot-http.ipxe](http://10.0.2.2/boot-http.ipxe)  
+set uri http://10.0.2.2/boot-http.ipxe
 ...  
 # usage of the variable with ${varname}  
 prompt Press any key to continue loading from ${uri}
