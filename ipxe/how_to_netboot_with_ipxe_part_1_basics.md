@@ -1,4 +1,4 @@
-[Read Article nn medium.com](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)
+[Read Article on medium.com](https://medium.com/@peter.bolch/how-to-netboot-with-ipxe-6a41db514dee)
 
 How to Netboot with iPXE Part 1
 ===============================
