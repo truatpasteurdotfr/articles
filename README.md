@@ -1,4 +1,4 @@
-# articles
+# ARTICLES
 Repository for my blog articles and to encourage some "crowd authoring"
 
 
