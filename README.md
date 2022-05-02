@@ -7,3 +7,7 @@ The awesome ipxe community was very happy about my first article. But they told 
 Therefore I decided to push the articles to this repo. Here ppl can help by creating a pull request with corrections.
 
 If there are wrong descriptions or other failures in the content feel free to create a pull request also. 
+
+# WHERE 
+For now I will publish on https://medium.com/@peter.bolch 
+
